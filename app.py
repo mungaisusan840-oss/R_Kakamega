@@ -146,7 +146,7 @@ def prepare_web_overlay(raster_path: str, medium: str):
     return _encode_png(rgba), bounds, metadata
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def _admin_lookup_geojson(path_string: str, candidate_fields: tuple[str, ...]) -> dict:
     """Return a compact WGS84 GeoJSON used only for instant browser-side lookup."""
     path = Path(path_string)
@@ -167,13 +167,14 @@ def _admin_lookup_geojson(path_string: str, candidate_fields: tuple[str, ...]) -
 
         # The source ward GeoJSON is large. A small simplification keeps point
         # identification responsive without changing the displayed vector layers.
-        slim["geometry"] = slim.geometry.simplify(0.0002, preserve_topology=True)
+        # Increased tolerance for faster mobile loading
+        slim["geometry"] = slim.geometry.simplify(0.001, preserve_topology=True)
         return json.loads(slim.to_json())
     except Exception:
         return {"type": "FeatureCollection", "features": []}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def get_county_wgs84_bounds() -> list:
     """Return Kakamega County bounds as [[south, west], [north, east]]."""
     gdf = gpd.read_file(COUNTY_GEOJSON)
@@ -499,7 +500,7 @@ def add_vector_layers(m: folium.Map) -> None:
             pass
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def load_sample_points(path_string: str) -> gpd.GeoDataFrame:
     """Load sample points in WGS84, falling back to DBF coordinates if SHX is missing."""
     path = Path(path_string)
