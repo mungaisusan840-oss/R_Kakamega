@@ -134,12 +134,12 @@ def _encode_png(rgba_image) -> str:
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
-def prepare_web_overlay(raster_path: str, medium: str):
+def prepare_web_overlay(raster_path: str, medium: str, max_dim: int = 800):
     """Return a cached browser-ready PNG plus bounds and metadata."""
     rgba, bounds, metadata = (
-        prepare_water_overlay(raster_path)
+        prepare_water_overlay(raster_path, max_dim=max_dim)
         if medium == "Water"
-        else prepare_raster_overlay(raster_path)
+        else prepare_raster_overlay(raster_path, max_dim=max_dim)
     )
     if rgba is None or bounds is None:
         return None, bounds, metadata
@@ -2012,7 +2012,7 @@ def page_interactive_map(uploaded_file, medium: str):
     )
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def sample_query_records(medium: str) -> list[dict]:
     """Compact sample data used by the browser-side location query."""
     path = SOIL_SAMPLE_POINTS if medium == "Soil" else WATER_SAMPLE_POINTS
@@ -2958,7 +2958,8 @@ def page_check_location(uploaded_file, medium: str):
         st.warning(f"{medium} raster data is not available.")
         return
 
-    image_url, bounds, metadata = prepare_web_overlay(raster_path, medium)
+    # Use smaller max_dim for mobile to reduce image size and load time
+    image_url, bounds, metadata = prepare_web_overlay(raster_path, medium, max_dim=600)
     if image_url is None or bounds is None:
         st.error(f"Failed to load {medium.lower()} raster: {metadata.get('error', 'Unknown error')}")
         return
@@ -2967,7 +2968,8 @@ def page_check_location(uploaded_file, medium: str):
     default_lat = (county_bounds[0][0] + county_bounds[1][0]) / 2.0
     default_lon = (county_bounds[0][1] + county_bounds[1][1]) / 2.0
 
-    m = create_base_map(default_lat, default_lon, zoom=10)
+    # Use higher initial zoom for mobile to load less data
+    m = create_base_map(default_lat, default_lon, zoom=8)
 
     overlay = ImageOverlay(
         image=image_url,
@@ -2979,6 +2981,7 @@ def page_check_location(uploaded_file, medium: str):
     )
     overlay.add_to(m)
 
+    # Simplified location query for mobile - skip sample points for faster load
     add_fast_location_query(
         m,
         image_url,
