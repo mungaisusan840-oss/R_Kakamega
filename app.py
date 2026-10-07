@@ -3534,9 +3534,57 @@ def page_about():
             key="about-study-area",
         )
 
+def _get_statistics_data(medium: str) -> tuple:
+    """Return statistics data for the given medium."""
+    if medium == "Soil":
+        values = [
+            ("Samples", "122"),
+            ("Metals", "8"),
+            ("Classes", "4"),
+            ("Model", "XGBoost"),
+            ("Accuracy", "76.2%"),
+            ("Macro F1", "0.57"),
+        ]
+        classes = [
+            ("Clean", 5, "#4CAF50"),
+            ("Slight", 10, "#FFEB3B"),
+            ("Moderate", 15, "#FF9800"),
+            ("Heavy", 92, "#F44336"),
+        ]
+        dominant_share = 92 / 122 * 100
+        minority_share = 30 / 122 * 100
+        imbalance_text = (
+            f"<strong>Class balance:</strong> Heavy contamination accounts for "
+            f"{dominant_share:.1f}% of the soil samples, while Clean, Slight and Moderate "
+            f"together account for {minority_share:.1f}%. The Heavy-to-Clean count ratio is "
+            f"{92/5:.1f}:1, showing strong class imbalance."
+        )
+    else:
+        values = [
+            ("Samples evaluated", "89"),
+            ("Metals", "8"),
+            ("Classes", "2"),
+            ("Model", "Random Forest"),
+            ("Accuracy", "79.8%"),
+            ("Macro F1", "0.77"),
+        ]
+        classes = [
+            ("Safe", 62, "#4CAF50"),
+            ("Unsafe", 27, "#F44336"),
+        ]
+        safe_share = 62 / 89 * 100
+        unsafe_share = 27 / 89 * 100
+        imbalance_text = (
+            f"<strong>Class balance:</strong> Safe samples make up {safe_share:.1f}% of the "
+            f"water dataset and Unsafe samples {unsafe_share:.1f}%. The Safe-to-Unsafe count "
+            f"ratio is {62/27:.2f}:1, so the water dataset is more balanced than the soil dataset."
+        )
+    return values, classes, imbalance_text
+
+
 def page_statistics(medium: str):
     st.markdown(
-        f"""
+        """
         <style>
         .stats-page-title {
             font-size: 1.35rem;
@@ -3638,11 +3686,11 @@ def page_statistics(medium: str):
             <div class="stats-page-title">Key Statistics</div>
             <span style="
                 display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
-                border:1px solid {'#4CAF50' if medium == 'Soil' else '#F44336'};
-                background:{'#2a362b' if medium == 'Soil' else '#352629'};
+                border:1px solid """ + ('#4CAF50' if medium == 'Soil' else '#F44336') + """;
+                background:""" + ('#2a362b' if medium == 'Soil' else '#352629') + """;
                 color:#f4f4f5;font-size:.72rem;font-weight:700;white-space:nowrap;
                 margin-bottom:.28rem;
-            ">{'Soil contamination' if medium == 'Soil' else 'Water safety'}</span>
+            "">""" + ('Soil contamination' if medium == 'Soil' else 'Water safety') + """</span>
         </div>
         <div class="stats-page-subtitle">
             Summary of the selected dataset, model performance and class distribution.
@@ -3651,49 +3699,7 @@ def page_statistics(medium: str):
         unsafe_allow_html=True,
     )
 
-    if medium == "Soil":
-        values = [
-            ("Samples", "122"),
-            ("Metals", "8"),
-            ("Classes", "4"),
-            ("Model", "XGBoost"),
-            ("Accuracy", "76.2%"),
-            ("Macro F1", "0.57"),
-        ]
-        classes = [
-            ("Clean", 5, "#4CAF50"),
-            ("Slight", 10, "#FFEB3B"),
-            ("Moderate", 15, "#FF9800"),
-            ("Heavy", 92, "#F44336"),
-        ]
-        dominant_share = 92 / 122 * 100
-        minority_share = 30 / 122 * 100
-        imbalance_text = (
-            f"<strong>Class balance:</strong> Heavy contamination accounts for "
-            f"{dominant_share:.1f}% of the soil samples, while Clean, Slight and Moderate "
-            f"together account for {minority_share:.1f}%. The Heavy-to-Clean count ratio is "
-            f"{92/5:.1f}:1, showing strong class imbalance."
-        )
-    else:
-        values = [
-            ("Samples evaluated", "89"),
-            ("Metals", "8"),
-            ("Classes", "2"),
-            ("Model", "Random Forest"),
-            ("Accuracy", "79.8%"),
-            ("Macro F1", "0.77"),
-        ]
-        classes = [
-            ("Safe", 62, "#4CAF50"),
-            ("Unsafe", 27, "#F44336"),
-        ]
-        safe_share = 62 / 89 * 100
-        unsafe_share = 27 / 89 * 100
-        imbalance_text = (
-            f"<strong>Class balance:</strong> Safe samples make up {safe_share:.1f}% of the "
-            f"water dataset and Unsafe samples {unsafe_share:.1f}%. The Safe-to-Unsafe count "
-            f"ratio is {62/27:.2f}:1, so the water dataset is more balanced than the soil dataset."
-        )
+    values, classes, imbalance_text = _get_statistics_data(medium)
 
     cols = st.columns(6, gap="small")
     for col, (label, value) in zip(cols, values):
